@@ -25,6 +25,7 @@ public class TTT : MonoBehaviour
     int adjacentRow;
     int adjacentCol;
     bool noBlock;
+    [SerializeField] bool hiddenThreat;
 
     // Start is called before the first frame update
     void Start()
@@ -117,23 +118,33 @@ public class TTT : MonoBehaviour
         {
             ChooseSpace(1, 1);
         }
-        else
+        //Take corner or safe
+        else //(merge into 1?)
         {
             BlockWin();
+            if (hiddenThreat == true)
+            {
+                Safe();
+            }
             if (noBlock == true)
             {
+                Debug.Log("noBlock");
                 int[] corner = { 0, 2 };
                 int randomIndex = Random.Range(0, corner.Length);
                 int randomIndex2 = Random.Range(0, corner.Length);
 
                 ChooseSpace(corner[randomIndex], corner[randomIndex2]);
-                sequence = 3;
             }
         }
     }
 
     public void Adjacent()
     {
+        if (!hiddenThreat)
+        {
+            BlockWin();
+        }
+        //BlockWin();
         Debug.Log("Adjacent called");
         if (adjacent)
         {
@@ -259,6 +270,9 @@ public class TTT : MonoBehaviour
         bool checkSecondDiagonal = true;
         noBlock = false;
 
+        hiddenThreat = false;
+        int cornerTotal;
+
         // check rows
         for (int i = 0; i < Rows; i++)
         {
@@ -289,6 +303,7 @@ public class TTT : MonoBehaviour
                 checkColumns = false;
                 checkFirstDiagonal = false;
                 checkSecondDiagonal = false;
+                adjacent = false;
                 Debug.Log(sequence);
                 break;
             }
@@ -325,6 +340,7 @@ public class TTT : MonoBehaviour
                     ChooseSpace(rowNone, colNone);
                     checkFirstDiagonal = false;
                     checkSecondDiagonal = false;
+                    adjacent = false;
                     Debug.Log(sequence);
                     break;
                 }
@@ -335,16 +351,24 @@ public class TTT : MonoBehaviour
         // top left to bottom right
         sum = 0;
         none = 0;
+        cornerTotal = 0;
 
         if (checkFirstDiagonal)
         {
             for (int i = 0; i < Rows; i++)
             {
                 int value = 0;
+                cornerTotal = 0;
                 if (cells[i, i].current == PlayerOption.X)
+                {
                     value = 1;
+                    cornerTotal++;
+                }
                 else if (cells[i, i].current == PlayerOption.O)
+                {
                     value = -1;
+                    cornerTotal++;
+                }
                 else if (cells[i, i].current == PlayerOption.NONE)
                 {
                     value = 0;
@@ -354,9 +378,15 @@ public class TTT : MonoBehaviour
                 sum += value;
             }
 
-            if (sum == 2 || sum == -2)
+            if (cornerTotal == 3)
+            {
+                hiddenThreat = true;
+                //Adjacent();
+            }
+            else if (sum == 2 || sum == -2)
             {
                 ChooseSpace(none, none);
+                adjacent = false;
                 Debug.Log(sequence);
                 checkSecondDiagonal = false;
             }
@@ -368,14 +398,22 @@ public class TTT : MonoBehaviour
         {
             sum = 0;
             none = 0;
+            cornerTotal = 0;
+
             for (int i = 0; i < Rows; i++)
             {
                 int value = 0;
 
                 if (cells[i, Columns - 1 - i].current == PlayerOption.X)
+                {
                     value = 1;
+                    cornerTotal++;
+                }
                 else if (cells[i, Columns - 1 - i].current == PlayerOption.O)
+                {
                     value = -1;
+                    cornerTotal++;
+                }
                 else if (cells[i, Columns - 1 - i].current == PlayerOption.NONE)
                 {
                     value = 0;
@@ -385,9 +423,16 @@ public class TTT : MonoBehaviour
                 sum += value;
             }
 
-            if (sum == 2 || sum == -2)
+            if (cornerTotal == 3)
             {
-                ChooseSpace(none, none);
+                Debug.Log(cornerTotal);
+                hiddenThreat = true;
+                //Adjacent();
+            }
+            else if (sum == 2 || sum == -2)
+            {
+                ChooseSpace(none, Columns - 1 - none);
+                adjacent = false;
                 Debug.Log(sequence);
                 Debug.Log("Second Diagonal Checked");
             }
@@ -395,6 +440,25 @@ public class TTT : MonoBehaviour
             {
                 noBlock = true;
             }
+        }
+    }
+
+    public void Safe() //check why this is not being called
+    {
+        bool valid = false;
+
+        int randomIndex = Random.Range(0, 2);
+        int randomIndex2 = Random.Range(0, 2);
+
+        Debug.Log("[" + randomIndex + "," +  randomIndex2 + "]");
+        if (cells[randomIndex, randomIndex2].current == PlayerOption.NONE)
+        {
+            valid = true;
+            ChooseSpace(randomIndex, randomIndex2);
+        }
+        else
+        {
+            Safe();
         }
     }
 
