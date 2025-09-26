@@ -70,7 +70,7 @@ public class TTT : MonoBehaviour
 
     public void InitialMove()
     {
-        //Seeing if corners are empty
+        //Calculates how many empty cells there are
         int emptyAmount = 0;
         int[] corners = { 0, 2 };
         int randomIndex = Random.Range(0, corners.Length);
@@ -85,13 +85,13 @@ public class TTT : MonoBehaviour
             }
         }
 
-        // Take corner if board is empty
+        // Take a random corner if board is empty
         if (emptyAmount == 9)
         {
             ChooseSpace(corners[randomIndex], corners[randomIndex2]);
             adjacent = true;
-            adjacentRow = corners[randomIndex];
-            adjacentCol = corners[randomIndex2];
+            adjacentRow = corners[randomIndex]; //stores row index of corner taken
+            adjacentCol = corners[randomIndex2]; //stores column index of corner taken
         }
         else
         {
@@ -101,6 +101,7 @@ public class TTT : MonoBehaviour
 
     public void SecondMove()
     {
+        //Calculates how many empty corners there are
         int corners = 2;
         int emptyAmountOfCorners = 0;
 
@@ -115,32 +116,19 @@ public class TTT : MonoBehaviour
             }
         }
 
-        //Take center
+        //Take center if opponent has a corner and the center is available
         if ((emptyAmountOfCorners < 4) && (cells[1, 1].current == PlayerOption.NONE))
         {
             ChooseSpace(1, 1);
         }
-        //Block/Win/Take a cell adjacent to your corner
         else
         {
             BlockWin();
-
-            /*if (noBlock == true && emptyAmount == 4)
-            {
-                Safe();
-            }
-            else if (noBlock == true)
-            {
-                adjacent = true;
-                Adjacent();
-                sequence = -1;
-            }*/
         }
     }
 
-    public void Adjacent()
+    public void Adjacent() //Will take cell adjacent to corner owned
     {
-        Debug.Log("Adjacent called");
         if (adjacent)
         {
             //If top left corner is owned
@@ -257,12 +245,13 @@ public class TTT : MonoBehaviour
         }
     }
 
-    public void BlockWin()
+    public void BlockWin() //Takes third slot in a line; serves as both blocking and winnin
     {
         int emptyAmount = 0;
         int randomIndex = Random.Range(0, 2);
         int randomIndex2 = Random.Range(0, 2);
 
+        //Calculates how many empty cells there are
         for (int i = 0; i < Rows; i++)
         {
             for (int j = 0; j < Columns; j++)
@@ -272,14 +261,18 @@ public class TTT : MonoBehaviour
             }
         }
 
+        //If there are one or two cells left, take any (game is a tie for sure at this point)
         if (emptyAmount <= 2)
         {
             Safe();
         }
 
         int sum = 0;
+
+        // Store the indexes of third empty spot of a line
         int rowNone;
         int colNone;
+
         int none;
         bool checkColumns = true;
         bool checkFirstDiagonal = true;
@@ -287,6 +280,7 @@ public class TTT : MonoBehaviour
         noBlock = false;
         int diagonalTotal;
 
+        // The following check to see if either player has two in a line...
         // check rows
         for (int i = 0; i < Rows; i++)
         {
@@ -392,7 +386,7 @@ public class TTT : MonoBehaviour
 
             Debug.Log(diagonalTotal);
 
-            if (diagonalTotal == 3)
+            if (diagonalTotal == 3) // If there is already a full diagonal (not a winning diagonal), the machine should take a corner to assure it won't lose
             {
                 int corners = 2;
 
@@ -449,7 +443,7 @@ public class TTT : MonoBehaviour
                 sum += value;
             }
 
-            if (diagonalTotal == 3)
+            if (diagonalTotal == 3) // If there is already a full diagonal (not a winning diagonal), the machine should take a corner to assure it won't lose
             {
                 int corners = 2;
 
@@ -471,10 +465,11 @@ public class TTT : MonoBehaviour
                 ChooseSpace(none, Columns - 1 - none);
                 adjacent = false;
             }
-            else
+            else // Happens when no blocking was necessary
             {
                 noBlock = true;
 
+                // Calculates amount of empty corners
                 int corners = 2;
                 int emptyAmountOfCorners = 0;
 
@@ -507,7 +502,7 @@ public class TTT : MonoBehaviour
         }
     }
 
-    public void Safe() 
+    public void Safe() // Takes first empty cell it finds
     {
         for (int i = 0; i < Rows; i++)
         {
