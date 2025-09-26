@@ -24,8 +24,10 @@ public class TTT : MonoBehaviour
     bool adjacent = false;
     int adjacentRow;
     int adjacentCol;
-    bool noBlock;
+    [SerializeField] bool noBlock;
     [SerializeField] bool hiddenThreat;
+    [SerializeField] bool moveMade;
+    [SerializeField] bool cameFromSafe = false;
 
     // Start is called before the first frame update
     void Start()
@@ -50,7 +52,7 @@ public class TTT : MonoBehaviour
         {
             case 0:
                 InitialMove();
-                sequence++;
+                if (!cameFromSafe) sequence++;
                 break;
             case 1:
                 SecondMove();
@@ -68,6 +70,7 @@ public class TTT : MonoBehaviour
 
     public void InitialMove()
     {
+        //Seeing if corners are empty
         int emptyAmount = 0;
         int[] corners = { 0, 2 };
         int randomIndex = Random.Range(0, corners.Length);
@@ -98,9 +101,8 @@ public class TTT : MonoBehaviour
 
     public void SecondMove()
     {
-        Debug.Log("SecondMove called");
         int corners = 2;
-        int emptyAmount = 0;
+        int emptyAmountOfCorners = 0;
 
         for (int i = 0; i < corners + 1; i++)
         {
@@ -109,42 +111,35 @@ public class TTT : MonoBehaviour
             {
                 if (j == 1) continue;
                 if (cells[j, i].current == PlayerOption.NONE)
-                    emptyAmount++;
+                    emptyAmountOfCorners++;
             }
         }
 
         //Take center
-        if ((emptyAmount < 4) && (cells[1, 1].current == PlayerOption.NONE))
+        if ((emptyAmountOfCorners < 4) && (cells[1, 1].current == PlayerOption.NONE))
         {
             ChooseSpace(1, 1);
         }
-        //Take corner or safe
-        else //(merge into 1?)
+        //Block/Win/Take a cell adjacent to your corner
+        else
         {
             BlockWin();
-            if (hiddenThreat == true)
+
+            /*if (noBlock == true && emptyAmount == 4)
             {
                 Safe();
             }
-            if (noBlock == true)
+            else if (noBlock == true)
             {
-                Debug.Log("noBlock");
-                int[] corner = { 0, 2 };
-                int randomIndex = Random.Range(0, corner.Length);
-                int randomIndex2 = Random.Range(0, corner.Length);
-
-                ChooseSpace(corner[randomIndex], corner[randomIndex2]);
-            }
+                adjacent = true;
+                Adjacent();
+                sequence = -1;
+            }*/
         }
     }
 
     public void Adjacent()
     {
-        if (!hiddenThreat)
-        {
-            BlockWin();
-        }
-        //BlockWin();
         Debug.Log("Adjacent called");
         if (adjacent)
         {
@@ -256,11 +251,32 @@ public class TTT : MonoBehaviour
                 }
             }
         }
+        else
+        {
+            BlockWin();
+        }
     }
 
     public void BlockWin()
     {
-        Debug.Log("BlockWin called");
+        int emptyAmount = 0;
+        int randomIndex = Random.Range(0, 2);
+        int randomIndex2 = Random.Range(0, 2);
+
+        for (int i = 0; i < Rows; i++)
+        {
+            for (int j = 0; j < Columns; j++)
+            {
+                if (cells[j, i].current == PlayerOption.NONE)
+                    emptyAmount++;
+            }
+        }
+
+        if (emptyAmount <= 2)
+        {
+            Safe();
+        }
+
         int sum = 0;
         int rowNone;
         int colNone;
@@ -269,9 +285,7 @@ public class TTT : MonoBehaviour
         bool checkFirstDiagonal = true;
         bool checkSecondDiagonal = true;
         noBlock = false;
-
-        hiddenThreat = false;
-        int cornerTotal;
+        int diagonalTotal;
 
         // check rows
         for (int i = 0; i < Rows; i++)
@@ -290,7 +304,7 @@ public class TTT : MonoBehaviour
                 else if (cells[i, j].current == PlayerOption.NONE)
                 {
                     value = 0;
-                    rowNone = i; 
+                    rowNone = i;
                     colNone = j;
                 }
 
@@ -304,7 +318,6 @@ public class TTT : MonoBehaviour
                 checkFirstDiagonal = false;
                 checkSecondDiagonal = false;
                 adjacent = false;
-                Debug.Log(sequence);
                 break;
             }
         }
@@ -341,7 +354,6 @@ public class TTT : MonoBehaviour
                     checkFirstDiagonal = false;
                     checkSecondDiagonal = false;
                     adjacent = false;
-                    Debug.Log(sequence);
                     break;
                 }
             }
@@ -351,23 +363,23 @@ public class TTT : MonoBehaviour
         // top left to bottom right
         sum = 0;
         none = 0;
-        cornerTotal = 0;
+        diagonalTotal = 0;
 
         if (checkFirstDiagonal)
         {
+            Debug.Log("Checking first diagonal");
             for (int i = 0; i < Rows; i++)
             {
                 int value = 0;
-                cornerTotal = 0;
                 if (cells[i, i].current == PlayerOption.X)
                 {
                     value = 1;
-                    cornerTotal++;
+                    diagonalTotal++;
                 }
                 else if (cells[i, i].current == PlayerOption.O)
                 {
                     value = -1;
-                    cornerTotal++;
+                    diagonalTotal++;
                 }
                 else if (cells[i, i].current == PlayerOption.NONE)
                 {
@@ -378,27 +390,41 @@ public class TTT : MonoBehaviour
                 sum += value;
             }
 
-            if (cornerTotal == 3)
+            Debug.Log(diagonalTotal);
+
+            if (diagonalTotal == 3)
             {
-                hiddenThreat = true;
-                //Adjacent();
+                int corners = 2;
+
+                for (int i = 0; i < corners + 1; i++)
+                {
+                    if (i == 1) continue;
+                    for (int j = 0; j < corners + 1; j++)
+                    {
+                        if (j == 1) continue;
+                        if (cells[j, i].current == PlayerOption.NONE)
+                        {
+                            ChooseSpace(i, j);
+                        }
+                    }
+                }
+                checkSecondDiagonal = false;
             }
             else if (sum == 2 || sum == -2)
             {
                 ChooseSpace(none, none);
                 adjacent = false;
-                Debug.Log(sequence);
                 checkSecondDiagonal = false;
             }
         }
-        
+
 
         // top right to bottom left
         if (checkSecondDiagonal)
         {
             sum = 0;
             none = 0;
-            cornerTotal = 0;
+            diagonalTotal = 0;
 
             for (int i = 0; i < Rows; i++)
             {
@@ -407,12 +433,12 @@ public class TTT : MonoBehaviour
                 if (cells[i, Columns - 1 - i].current == PlayerOption.X)
                 {
                     value = 1;
-                    cornerTotal++;
+                    diagonalTotal++;
                 }
                 else if (cells[i, Columns - 1 - i].current == PlayerOption.O)
                 {
                     value = -1;
-                    cornerTotal++;
+                    diagonalTotal++;
                 }
                 else if (cells[i, Columns - 1 - i].current == PlayerOption.NONE)
                 {
@@ -423,42 +449,78 @@ public class TTT : MonoBehaviour
                 sum += value;
             }
 
-            if (cornerTotal == 3)
+            if (diagonalTotal == 3)
             {
-                Debug.Log(cornerTotal);
-                hiddenThreat = true;
-                //Adjacent();
+                int corners = 2;
+
+                for (int i = 0; i < corners + 1; i++)
+                {
+                    if (i == 1) continue;
+                    for (int j = 0; j < corners + 1; j++)
+                    {
+                        if (j == 1) continue;
+                        if (cells[j, i].current == PlayerOption.NONE)
+                        {
+                            ChooseSpace(i, j);
+                        }
+                    }
+                }
             }
             else if (sum == 2 || sum == -2)
             {
                 ChooseSpace(none, Columns - 1 - none);
                 adjacent = false;
-                Debug.Log(sequence);
-                Debug.Log("Second Diagonal Checked");
             }
             else
             {
                 noBlock = true;
+
+                int corners = 2;
+                int emptyAmountOfCorners = 0;
+
+                for (int i = 0; i < corners + 1; i++)
+                {
+                    if (i == 1) continue;
+                    for (int j = 0; j < corners + 1; j++)
+                    {
+                        if (j == 1) continue;
+                        if (cells[j, i].current == PlayerOption.NONE)
+                            emptyAmountOfCorners++;
+                    }
+                }
+
+                if (noBlock == true && emptyAmountOfCorners == 4)
+                {
+                    Safe();
+                }
+                else if (noBlock == true && cells[1,1].current == PlayerOption.NONE)
+                {
+                    ChooseSpace(1, 1);
+                }
+                else if (noBlock == true)
+                {
+                    adjacent = true;
+                    Adjacent();
+                    sequence = -1;
+                }
             }
         }
     }
 
-    public void Safe() //check why this is not being called
+    public void Safe() 
     {
-        bool valid = false;
-
-        int randomIndex = Random.Range(0, 2);
-        int randomIndex2 = Random.Range(0, 2);
-
-        Debug.Log("[" + randomIndex + "," +  randomIndex2 + "]");
-        if (cells[randomIndex, randomIndex2].current == PlayerOption.NONE)
+        for (int i = 0; i < Rows; i++)
         {
-            valid = true;
-            ChooseSpace(randomIndex, randomIndex2);
-        }
-        else
-        {
-            Safe();
+            for (int j = 0; j < Columns; j++)
+            {
+                if (cells[i, j].current == PlayerOption.NONE)
+                {
+                    ChooseSpace(i, j);
+                    sequence = 3;
+                    cameFromSafe = true;
+                    return;
+                }
+            }
         }
     }
 
